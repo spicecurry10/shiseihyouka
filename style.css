@@ -202,6 +202,37 @@ button:disabled {
   border-left-color: var(--danger);
 }
 
+.privacy-panel {
+  border-left: 6px solid var(--brand);
+}
+
+.privacy-list {
+  margin: 10px 0;
+  padding-left: 22px;
+}
+
+.privacy-list li {
+  margin: 4px 0;
+}
+
+.confirm-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f7faf9;
+  border: 1px solid var(--line);
+  font-weight: 800;
+}
+
+.confirm-row input {
+  inline-size: 22px;
+  block-size: 22px;
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
 .panel-title,
 .history-header {
   display: flex;

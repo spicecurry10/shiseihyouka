@@ -77,6 +77,7 @@ const state = {
 const els = {
   modelStatus: document.getElementById("modelStatus"),
   messageArea: document.getElementById("messageArea"),
+  privacyConfirm: document.getElementById("privacyConfirm"),
   themeSelect: document.getElementById("themeSelect"),
   modeSelect: document.getElementById("modeSelect"),
   guide: document.getElementById("guide"),
@@ -90,6 +91,7 @@ const els = {
   csvBtn: document.getElementById("csvBtn"),
   resultBox: document.getElementById("resultBox"),
   historyBox: document.getElementById("historyBox"),
+  clearAllDataBtn: document.getElementById("clearAllDataBtn"),
   clearRecordsBtn: document.getElementById("clearRecordsBtn")
 };
 
@@ -124,6 +126,7 @@ function boot() {
   els.compareBtn.addEventListener("click", () => compare(true));
   els.saveBtn.addEventListener("click", saveLatest);
   els.csvBtn.addEventListener("click", exportCsv);
+  els.clearAllDataBtn.addEventListener("click", clearAllDeviceData);
   els.clearRecordsBtn.addEventListener("click", clearRecords);
 
   document.querySelectorAll("[data-action]").forEach((button) => {
@@ -171,7 +174,7 @@ async function initModel() {
 function bindFile(inputId, side) {
   document.getElementById(inputId).addEventListener("change", (event) => {
     const file = event.target.files && event.target.files[0];
-    if (file) loadImage(file, side);
+    if (file && requirePrivacyConfirmation()) loadImage(file, side);
     event.target.value = "";
   });
 }
@@ -211,6 +214,7 @@ function resizeCanvas(target) {
 }
 
 async function runAutoForBoth() {
+  if (!requirePrivacyConfirmation()) return;
   if (!state.modelReady) {
     showMessage("自動推定モデルが使えないため、手動タップで入力してください。", "warn");
     return;
@@ -262,6 +266,7 @@ function keypointsToMap(keypoints) {
 }
 
 function addManualPoint(side, event) {
+  if (!requirePrivacyConfirmation()) return;
   const target = state[side];
   if (!target.image) {
     showMessage((side === "before" ? "Before" : "After") + "写真を先に入れてください。", "warn");
@@ -346,6 +351,7 @@ function resetForMetric() {
 }
 
 function compare(showWarning) {
+  if (!requirePrivacyConfirmation()) return null;
   const metric = METRICS[els.themeSelect.value];
   const beforeReady = hasRequiredPoints(state.before, metric);
   const afterReady = hasRequiredPoints(state.after, metric);
@@ -413,6 +419,7 @@ function renderResult(result) {
 }
 
 function saveLatest() {
+  if (!requirePrivacyConfirmation()) return;
   const result = state.latestResult || compare(true);
   if (!result) return;
   const records = getRecords();
@@ -453,6 +460,7 @@ function renderHistory() {
 }
 
 function exportCsv() {
+  if (!requirePrivacyConfirmation()) return;
   const records = getRecords();
   if (!records.length) {
     showMessage("CSV出力できる保存記録がありません。", "warn");
@@ -485,6 +493,34 @@ function clearRecords() {
   if (!confirm("保存記録をすべて削除しますか？")) return;
   localStorage.removeItem(STORAGE_KEY);
   renderHistory();
+}
+
+function clearAllDeviceData() {
+  if (!confirm("この端末内の保存記録、現在の写真、入力点、比較結果をすべて削除しますか？")) return;
+  localStorage.removeItem(STORAGE_KEY);
+  ["before", "after"].forEach((side) => {
+    const target = state[side];
+    target.image = null;
+    target.imageName = "";
+    target.points = {};
+    target.manualPoints = [];
+    target.pose = null;
+    target.source = "none";
+    target.canvas.width = 900;
+    target.canvas.height = 680;
+    drawPlaceholder(target);
+  });
+  state.latestResult = null;
+  renderHistory();
+  updateStatus();
+  updateResultPrompt();
+  showMessage("端末内データを削除しました。写真データは保存していません。", "info");
+}
+
+function requirePrivacyConfirmation() {
+  if (els.privacyConfirm.checked) return true;
+  showMessage("先にプライバシー欄を確認し、同意チェックを入れてください。", "warn");
+  return false;
 }
 
 function updateGuide() {
